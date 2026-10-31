@@ -3,9 +3,11 @@ from .auth_serializers import RegisterSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from .throttles import RefreshRateThrottle
 
 class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [RefreshRateThrottle]
     def post(self, request):
         serializer = RegisterSerializer(data = request.data)
         serializer.is_valid(raise_exception=True)

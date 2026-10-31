@@ -1,8 +1,9 @@
 from rest_framework import viewsets
 from .serializer import CategorySerializer, TransactionSerializer
 from .models import Category, Transaction
-from rest_framework.permissions import IsAuthenticated
 from .pagination import StandardPagination
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import action
 
 # Create your views here.
@@ -10,7 +11,7 @@ from rest_framework.decorators import action
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class= CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     pagination_class = StandardPagination
 
     def perform_create(self, serializer):
@@ -22,7 +23,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     pagination_class = StandardPagination
 
     def perform_create(self, serializer):
