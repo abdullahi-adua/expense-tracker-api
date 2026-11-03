@@ -51,7 +51,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             serializer.save(user=self.request.user)
     
     def get_queryset(self):
-        qs = Transaction.objects.filter(user=self.request.user)
+        qs = Transaction.objects.filter(user=self.request.user).select_related("category")
         date_from = self.request.query_params.get('date_from')
         date_to = self.request.query_params.get('date_to')
         if date_from and date_to and date_from > date_to:
