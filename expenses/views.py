@@ -13,8 +13,8 @@ from decimal import Decimal
 from django.db.models import Sum, Count
 from rest_framework.response import Response
 from rest_framework import status
-
-
+# For Category delete
+from django.db.models import ProtectedError
 
 # Create your views here.
 
@@ -35,6 +35,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Category.objects.filter(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise ValidationError("Cannot delete a category with transactions. Reassign them first.")
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
