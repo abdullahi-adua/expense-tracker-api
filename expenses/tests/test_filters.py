@@ -1,3 +1,5 @@
+from urllib import response
+
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -96,3 +98,30 @@ class TransactionFilterTest(APITestCase):
         # ASSERT
         self.assertEqual(response.status_code, 400)
         self.assertIn('date_to', response.data)
+
+    def test_pagination_page_out_of_range_returns_404(self):
+        response = self.client.get("/api/transactions/?page=999")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_search_by_description(self):
+        Transaction.objects.create(user=self.alice, category=self.cat, amount='50.00', date='2026-10-01', description='Lunch with team')
+        Transaction.objects.create(user=self.alice, category=self.cat, amount='75.00', date='2026-10-15', description='Dinner with family')
+
+        response = self.client.get("/api/transactions/?search=lunch")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]["description"], "Lunch with team")
+
+    def test_ordering_by_amount(self):
+        Transaction.objects.create(user=self.alice, category=self.cat, amount='50.00', date='2026-10-01')
+        Transaction.objects.create(user=self.alice, category=self.cat, amount='100.00', date='2026-10-31')
+        Transaction.objects.create(user=self.alice, category=self.cat, amount='75.00', date='2026-10-15')
+
+        response = self.client.get("/api/transactions/?ordering=amount")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 3)
+        amounts = [tx['amount'] for tx in response.data['results']]
+        self.assertEqual(amounts, ['50.00', '75.00', '100.00'])

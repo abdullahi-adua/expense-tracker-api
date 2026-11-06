@@ -1,6 +1,9 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from expenses.auth_serializers import RegisterSerializer
+from rest_framework import status
+from rest_framework.test import APITestCase
+
 
 
 class RegisterSerializerTest(TestCase):
@@ -42,3 +45,68 @@ class RegisterSerializerTest(TestCase):
         })
         self.assertFalse(serializer.is_valid())
         self.assertIn('email', serializer.errors)
+
+class JWTFlowTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="alice", password="password123")
+    
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def test_login_with_valid_credentials_returns_tokens(self):
+
+        response = self.client.post(f'/api/auth/login/', {
+            "username": "alice",
+            "password": "password123"
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK )
+
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+
+    def test_login_with_invalid_credentials_returns_401(self):
+        response = self.client.post(f'/api/auth/login/', {
+                    "username": "alice",
+                    "password": "Password"
+                }, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED )
+
+    def test_refresh_with_valid_token_returns_new_access(self):
+        login_response = self.client.post('/api/auth/login/', {
+            "username": "alice",
+            "password": "password123",
+        }, format='json')
+        refresh_token = login_response.data['refresh']
+        
+        response = self.client.post('/api/auth/refresh/', {
+            "refresh": refresh_token,
+        }, format='json')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access', response.data)
+
+    def test_refresh_with_invalid_token_returns_401(self):
+        response = self.client.post('/api/auth/refresh/', {
+            "refresh": "not-a-valid-token",
+        }, format='json')
+        self.assertEqual(response.status_code, 401)
+
+    def test_protected_endpoint_without_token_returns_401(self):
+        response = self.client.get('/api/transactions/')
+        self.assertEqual(response.status_code, 401)
+
+    def test_protected_endpoint_with_valid_token_returns_200(self):
+        login_response = self.client.post('/api/auth/login/', {
+            "username": "alice",
+            "password": "password123",
+        }, format='json')
+        access_token = login_response.data['access']
+        
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        response = self.client.get('/api/transactions/')
+        
+        self.assertEqual(response.status_code, 200)
