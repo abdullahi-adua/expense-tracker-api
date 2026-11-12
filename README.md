@@ -39,7 +39,7 @@ A Django REST Framework API for tracking personal income and expenses, with cate
 ### 1. Clone the repository
 
 ```bash
-git clone <https://github.com/abdullahi-adua/expense-tracker-api>
+git clone https://github.com/abdullahi-adua/expense-tracker-api
 cd Expense_Tracker_API
 ```
 
